@@ -19,14 +19,14 @@ The method determines the required sampling from the relaxation dynamics rather 
 
 | Directory | Description |
 |---|---|
-| [`code/`](code/) | Python implementation, configuration files, and instructions for running the analysis. |
-| [`data/`](data/) | Example pressure tensor trajectories from 20 independent HMN replicas at 146 MPa. |
-| [`input/`](input/) | Example LAMMPS production input, force-field settings, and equilibrated restart file. |
+| [`code/`](code/) | Python implementation and analysis configuration. |
+| [`data/`](data/) | Representative pressure tensor trajectories for testing the analysis. |
+| [`input/`](input/) | Example LAMMPS production input and equilibrated restart file. |
 
-Each directory contains a README with additional information.
+### Data and Software Availability
 
-### Citation
+The complete pressure tensor trajectories for HMN at six pressures
+(0.1, 34.5, 69, 146, 224, and 301 MPa) are available on Zenodo.
 
-If you use this software, please cite the associated publication and the archived software release:
-
-**Software DOI:** https://doi.org/10.5281/zenodo.22671587
+- **Simulation dataset:** https://doi.org/10.5281/zenodo.23965298
+- **Analysis software:** https://doi.org/10.5281/zenodo.22671587

@@ -1,26 +1,31 @@
-This directory contains molecular dynamics (MD) simulation data supporting the study:
-An Adaptive Green–Kubo Framework for Equilibrium Viscosity: Convergence and Relaxation-Time Scaling
+# Molecular Dynamics Data
 
-The data are used to calculate shear viscosity from equilibrium stress autocorrelation functions (SACFs) and to evaluate the adaptive Green-Kubo convergence procedure.
+This directory contains pressure tensor data from equilibrium molecular dynamics (EMD) simulations used for Green–Kubo viscosity calculations.
 
-1. Simulation system
-  Liquid: 2,2,4,4,6,8,8-Heptamethylnonane (HMN)
-  Temperature: 100 °C (373.15 K)
-  Pressure: 146 MPa
-  Number of molecules: 100
-  Force field: OPLS-AA
-  MD software: LAMMPS
-  Production ensemble: NVE
-  Number of replicas: 20
-**Thereplicas** were independently initialized and used to estimate statistical uncertainty through replica-level bootstrap resampling.
+## Data Organization
 
-2. Data organization
+Data are organized by pressure and replica. Each pressure condition contains 20 independently initialized NVE replicas (e.g., `01_146MPa_nve` to `20_146MPa_nve`).
 
-data/
-├── README.md
-└── 146MPa/
-    ├── 01_146MPa_nve/
-    ├── 02_146MPa_nve/
-    ├── 03_146MPa_nve/
-    ...
-    └── 20_146MPa_nve/
+Each replica folder contains three consecutive stress files: `stress1.dat`, `stress2.dat`, and `stress3.dat`.
+
+## Data Format
+
+Each file contains time-averaged pressure tensor components:
+
+```text
+# Time-averaged data for fix 2
+# TimeStep v_pxx v_pyy v_pzz v_pxy v_pxz v_pyz
+100 741.063 1787.78 1427.06 -112.772 -66.7364 -147.76
+200 784.453 1853.44 1291.4 -162.181 202.958 -292.934
+```
+
+- **Columns:** MD timestep, Pxx, Pyy, Pzz, Pxy, Pxz, Pyz
+- **MD timestep:** 1 fs
+- **Stress averaging interval:** 100 timesteps
+- **Output interval:** 100 fs (0.1 ps)
+- **Pressure units:** [atm or bar — confirm LAMMPS units]
+- **Temperature:** 373.15 K (100 °C)
+
+The pressure tensor values are averages over consecutive, non-overlapping 100-timestep intervals, rather than instantaneous measurements.
+
+Simulation inputs and analysis scripts are provided in the `input/` and `code/` directories, respectively.

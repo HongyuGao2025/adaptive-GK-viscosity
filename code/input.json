@@ -1,0 +1,45 @@
+{
+  "project_root": "../",
+  "combine": {
+    "enabled": true,
+    "stress_file_pattern": "stress*.dat",
+    "output_name": "combined_stress.dat"
+  },
+  "viscosity": {
+    "enabled": true,
+    "input_name": "combined_stress.dat",
+    "folder_pattern": "2.*_nve",
+    "temp": 373.15,
+    "box_length": 35.8313,
+    "dt_fs": 1.0,
+    "step_interval": 100,
+    "points_per_decade": 5
+  },
+  "bootstrap": {
+    "enabled": true,
+    "n_boot": 5000,
+    "fit_fractions": [
+      0.2,
+      0.3,
+      0.4,
+      0.5
+    ],
+    "random_seed": 12345,
+    "ci_eta_cutoff": 0.2,
+    "beta_min": 0.05,
+    "beta_max": 2.0,
+    "tau_min": 1e-05,
+    "early_t95_fraction": 0.2
+  },
+  "adaptive": {
+    "enabled": true,
+    "initial_t_blk_ns": 1.0,
+    "refinement_resolution_ns": 1.0,
+    "max_growth_factor": 2.0,
+    "confirm_next": true,
+    "max_t_blk_ns": null,
+    "n_blocks": 10,
+    "output_dir": "adaptive_gk_results",
+    "report_name": "convergence_report.txt"
+  }
+}

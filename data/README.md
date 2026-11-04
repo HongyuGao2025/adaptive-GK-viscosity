@@ -1,14 +1,16 @@
-# Molecular Dynamics Data
+## Molecular Dynamics Data
 
-This directory contains pressure tensor data from equilibrium molecular dynamics (EMD) simulations used for Green–Kubo viscosity calculations.
+This directory contains pressure tensor data from equilibrium molecular dynamics (EMD) simulations used for Green-Kubo viscosity calculations.
 
-## Data Organization
+### Data Organization
 
-Data are organized by pressure and replica. Each pressure condition contains 20 independently initialized NVE replicas (e.g., `01_146MPa_nve` to `20_146MPa_nve`).
+Data are organized by pressure and replica. 
+
+Each pressure condition contains 20 independently initialized NVE replicas (e.g., `01_146MPa_nve` to `20_146MPa_nve`).
 
 Each replica folder contains three consecutive stress files: `stress1.dat`, `stress2.dat`, and `stress3.dat`.
 
-## Data Format
+### Data Format
 
 Each file contains time-averaged pressure tensor components:
 
@@ -23,7 +25,7 @@ Each file contains time-averaged pressure tensor components:
 - **MD timestep:** 1 fs
 - **Stress averaging interval:** 100 timesteps
 - **Output interval:** 100 fs (0.1 ps)
-- **Pressure units:** [atm or bar — confirm LAMMPS units]
+- **Pressure units:** bar
 - **Temperature:** 373.15 K (100 °C)
 
 The pressure tensor values are averages over consecutive, non-overlapping 100-timestep intervals, rather than instantaneous measurements.

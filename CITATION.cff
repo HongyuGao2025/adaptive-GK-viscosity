@@ -7,6 +7,8 @@ authors:
   - family-names: Gao
     given-names: Hongyu
     affiliation: Saarland University
+    email: hongyu.gao@uni-saarland.de
+    orcid: https://orcid.org/0000-0003-0695-0122
 doi: 10.5281/zenodo.22671587
 repository-code: https://github.com/HongyuGao2025/adaptive-GK-viscosity
 license: MIT

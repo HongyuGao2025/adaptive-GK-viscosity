@@ -128,7 +128,7 @@ def _replica_viscosity_curve(data: np.ndarray, config: ViscosityConfig,
 
 def stretched_exp(t: np.ndarray, eta_inf: float, tau: float, beta: float) -> np.ndarray:
     """Evaluate the stretched-exponential viscosity buildup model.
-    Time and ``tau`` must have the same units; ``eta_inf`` is in Pa s."""
+    Time and ``tau`` must have the same units; ``eta_inf`` is in Pa*s."""
     return eta_inf * (1.0 - np.exp(-((t / tau) ** beta)))
 
 

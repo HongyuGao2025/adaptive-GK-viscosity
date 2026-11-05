@@ -1,3 +1,15 @@
+"""Adaptive Green-Kubo viscosity analysis for equilibrium MD stress trajectories.
+
+The module combines LAMMPS stress files, computes block-averaged Green-Kubo
+viscosity curves, estimates stretched-exponential parameters by replica-level
+bootstrap resampling, and searches for a block length satisfying convergence
+criteria. Study-specific settings are supplied by ``pipeline_config.py``.
+
+Input stress columns are: timestep, Pxx, Pyy, Pzz, Pxy, Pxz, Pyz.
+Pressures are assumed to be in atm (LAMMPS ``units real``); the simulation
+box is assumed cubic with its side length specified in angstroms.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,6 +24,9 @@ ATM_TO_PA = 101325.0
 
 
 def autocorrelation_fft(x: np.ndarray) -> np.ndarray:
+    """Compute the unbiased, non-mean-subtracted autocorrelation by FFT.
+    The input is a one-dimensional stress time series; the output has one
+    correlation value per nonnegative lag."""
     x = np.asarray(x, dtype=float)
     n = len(x)
     c = fftconvolve(x, x[::-1], mode="full")[n - 1:]
@@ -20,6 +35,8 @@ def autocorrelation_fft(x: np.ndarray) -> np.ndarray:
 
 
 def make_log_indices(t_ps: np.ndarray, points_per_decade: int = 100) -> np.ndarray:
+    """Select approximately logarithmically spaced indices, retaining lag zero.
+    ``t_ps`` contains lag times in picoseconds."""
     t_ps = np.asarray(t_ps)
     if len(t_ps) <= 1:
         return np.arange(len(t_ps))
@@ -35,6 +52,9 @@ def make_log_indices(t_ps: np.ndarray, points_per_decade: int = 100) -> np.ndarr
 
 
 def combine_stress_files(folder: Path, pattern: str, output_name: str) -> Path | None:
+    """Concatenate non-comment stress records from matching files in one replica.
+    Input files are sorted by filename; this assumes that filename order
+    agrees with chronological trajectory order."""
     files = sorted(folder.glob(pattern))
     if not files:
         print(f"Skip {folder}: no {pattern}")
@@ -51,6 +71,8 @@ def combine_stress_files(folder: Path, pattern: str, output_name: str) -> Path |
 
 
 def _load_replica_data(replica_dirs: list[Path], config: ViscosityConfig) -> list[np.ndarray]:
+    """Read the seven-column stress trajectories for all replica directories.
+    Missing or malformed input files raise an exception."""
     data = []
     for folder in replica_dirs:
         path = folder / config.input_name
@@ -65,6 +87,11 @@ def _load_replica_data(replica_dirs: list[Path], config: ViscosityConfig) -> lis
 
 def _replica_viscosity_curve(data: np.ndarray, config: ViscosityConfig,
                              t_blk_ns: float, n_blocks: int) -> tuple[np.ndarray, np.ndarray]:
+    """Calculate the mean Green-Kubo viscosity buildup for one replica.
+    The trajectory is split into ``n_blocks`` of length ``t_blk_ns``.
+    Six stress combinations are autocorrelated and integrated on the raw
+    time grid before logarithmic subsampling. Returns lag time in ns and
+    viscosity in Pa*s. Assumes a cubic box and stress in atm."""
     dt_s = config.dt_fs * config.step_interval * 1e-15
     sample_ps = dt_s * 1e12
     block_points = int(round(t_blk_ns * 1000.0 / sample_ps))
@@ -100,11 +127,16 @@ def _replica_viscosity_curve(data: np.ndarray, config: ViscosityConfig,
 
 
 def stretched_exp(t: np.ndarray, eta_inf: float, tau: float, beta: float) -> np.ndarray:
+    """Evaluate the stretched-exponential viscosity buildup model.
+    Time and ``tau`` must have the same units; ``eta_inf`` is in Pa s."""
     return eta_inf * (1.0 - np.exp(-((t / tau) ** beta)))
 
 
 def _bootstrap_one_fraction(t: np.ndarray, etas: np.ndarray, fraction: float, t_blk_ns: float,
                             config: BootstrapConfig, rng: np.random.Generator) -> dict:
+    """Fit bootstrap-resampled replica-average curves over one time window.
+    Resamples entire replicas with replacement, fits the stretched-
+    exponential model, and returns parameter intervals and convergence flags."""
     tmax = fraction * t[-1]
     mask = (t > 0.0) & (t <= tmax)
     tfit = t[mask]
@@ -147,6 +179,7 @@ def _bootstrap_one_fraction(t: np.ndarray, etas: np.ndarray, fraction: float, t_
 
     arr = np.asarray(rows)
     def stat(col: int) -> tuple[float, float, float]:
+        """Return the median and 2.5th/97.5th percentiles of one fit parameter."""
         return tuple(float(x) for x in np.percentile(arr[:, col], [50, 2.5, 97.5]))
 
     eta_med, eta_lo, eta_hi = stat(0)
@@ -186,6 +219,8 @@ def _evaluate_tblk(t: np.ndarray, etas: np.ndarray, t_blk_ns: float,
     # t_blk evaluation the same RNG stream is consumed sequentially by the
     # 20/30/40/50% fits, reproducing the behavior of the original bootstrap
     # script when the same viscosity curves are supplied.
+    """Evaluate all configured fitting fractions at a fixed block length.
+    Reinitializes the bootstrap random generator for reproducibility."""
     rng = np.random.default_rng(config.random_seed)
     return [
         _bootstrap_one_fraction(t, etas, f, t_blk_ns, config, rng)
@@ -194,6 +229,7 @@ def _evaluate_tblk(t: np.ndarray, etas: np.ndarray, t_blk_ns: float,
 
 
 def _write_curves(outdir: Path, t_blk_ns: float, t: np.ndarray, etas: np.ndarray) -> None:
+    """Save individual replica viscosity curves and their mean, SD, and SEM."""
     tag = f"tblk_{t_blk_ns:g}ns"
     d = outdir / tag
     d.mkdir(parents=True, exist_ok=True)
@@ -208,10 +244,12 @@ def _write_curves(outdir: Path, t_blk_ns: float, t: np.ndarray, etas: np.ndarray
 
 
 def _fmt_pass(v: bool) -> str:
+    """Format a convergence boolean as PASS or FAIL."""
     return "PASS" if v else "FAIL"
 
 
 def _attempt_state(results: list[dict], expected: int) -> tuple[bool, bool, bool]:
+    """Aggregate convergence flags across all configured fitting windows."""
     complete = len(results) == expected and all(r.get("valid", 0) > 0 for r in results)
     temporal_all = complete and all(r.get("pass_early", False) and r.get("pass_bound", False) for r in results)
     statistical_all = complete and all(r.get("pass_statistical", False) for r in results)
@@ -219,6 +257,7 @@ def _attempt_state(results: list[dict], expected: int) -> tuple[bool, bool, bool
 
 
 def _required_tblk_from_temporal(results: list[dict], early_fraction: float) -> float:
+    """Estimate a block length sufficient for the observed temporal bounds."""
     requirements = []
     for r in results:
         if r.get("valid", 0) == 0:
@@ -229,11 +268,13 @@ def _required_tblk_from_temporal(results: list[dict], early_fraction: float) -> 
 
 
 def _snap_up(value: float, resolution: float) -> float:
+    """Round a positive block length upward to the search resolution grid."""
     return float(np.ceil((value - 1e-12) / resolution) * resolution)
 
 
 def _snap_midpoint(low: float, high: float, resolution: float) -> float | None:
     # Return a grid point strictly inside (low, high), biased toward the midpoint.
+    """Find an interior grid point between the search bounds, if one exists."""
     lo_i = int(np.floor(low / resolution + 1e-12))
     hi_i = int(np.ceil(high / resolution - 1e-12))
     if hi_i - lo_i <= 1:
@@ -249,6 +290,7 @@ def _snap_midpoint(low: float, high: float, resolution: float) -> float | None:
 def _write_report(path: Path, attempts: list[dict], final: dict | None,
                   n_rep: int, n_blocks: int, config: BootstrapConfig,
                   max_available_tblk: float, search_note: str = "") -> None:
+    """Write the convergence-search history and final recommendation to disk."""
     with path.open("w", encoding="utf-8") as wf:
         wf.write("=" * 76 + "\n")
         wf.write("ADAPTIVE GREEN-KUBO VISCOSITY CONVERGENCE REPORT\n")
@@ -323,6 +365,10 @@ def _write_report(path: Path, attempts: list[dict], final: dict | None,
 
 
 def run_pipeline(config: PipelineConfig) -> None:
+    """Execute the full configured adaptive Green-Kubo analysis.
+    Discovers replica folders, optionally concatenates stress files, loads
+    trajectories, evaluates candidate block lengths, and writes viscosity
+    curves and a convergence report."""
     root = config.project_root
     replica_dirs = sorted(p for p in root.glob(config.viscosity.folder_pattern) if p.is_dir())
     if not replica_dirs:
@@ -370,6 +416,7 @@ def run_pipeline(config: PipelineConfig) -> None:
     expected = len(config.bootstrap.fit_fractions)
 
     def evaluate(t_blk: float, phase: str) -> dict:
+        """Evaluate and cache the convergence result at one candidate block length."""
         t_blk = round(float(t_blk), 12)
         if t_blk in cache:
             return cache[t_blk]

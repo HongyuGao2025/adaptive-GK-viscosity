@@ -8,7 +8,7 @@
   "viscosity": {
     "enabled": true,
     "input_name": "combined_stress.dat",
-    "folder_pattern": "2.*_nve",
+    "folder_pattern": "*_146MPa_nve",
     "temp": 373.15,
     "box_length": 35.8313,
     "dt_fs": 1.0,
@@ -18,12 +18,7 @@
   "bootstrap": {
     "enabled": true,
     "n_boot": 5000,
-    "fit_fractions": [
-      0.2,
-      0.3,
-      0.4,
-      0.5
-    ],
+    "fit_fractions": [0.2, 0.3, 0.4, 0.5],
     "random_seed": 12345,
     "ci_eta_cutoff": 0.2,
     "beta_min": 0.05,

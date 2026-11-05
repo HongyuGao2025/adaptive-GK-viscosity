@@ -1,3 +1,13 @@
+"""Command-line entry point for the adaptive Green-Kubo viscosity analysis.
+
+Usage:
+    python main.py
+    python main.py path/to/input.json
+
+By default, the configuration is loaded from input.json in the same
+directory as this script. 
+"""
+
 import sys
 from pathlib import Path
 

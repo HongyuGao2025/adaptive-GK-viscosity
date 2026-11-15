@@ -29,4 +29,4 @@ The complete pressure tensor trajectories for HMN at six pressures
 (0.1, 34.5, 69, 146, 224, and 301 MPa) are available on Zenodo.
 
 - **Simulation dataset:** https://doi.org/10.5281/zenodo.23965298
-- **Analysis software:** https://doi.org/10.5281/zenodo.22671587
+- **Analysis software:** https://doi.org/10.5281/zenodo.23977256
